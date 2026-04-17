@@ -17,6 +17,7 @@
                                          (if (list? rhs)
                                              (ops->structs rhs)
                                              (map ops->structs rhs)))]
-      [(Field lhs rhs) (Field lhs (ops->structs rhs))])))
+      [(Field lhs rhs) (Field lhs (ops->structs rhs))]
+      [(TokenField lhs rhs) (TokenField lhs (ops->structs rhs))])))
 
 (provide ops->structs)

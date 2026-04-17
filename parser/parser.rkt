@@ -31,10 +31,10 @@
     (parse-bin tokens)))
 
 (define consume-symbol
-  (λ (tokens kw)
+  (λ (tokens kws)
     (match tokens
       [(? null?) (error "tried to consume an empty program")]
-      [`(,token . ,other-tokens) #:when (and (Symbol? token) (eqv? (Symbol-sym token) kw)) other-tokens]
+      [`(,token . ,other-tokens) #:when (and (Symbol? token) (member (Symbol-sym token) kws)) other-tokens]
       [_ (error "consumed wrong type")])))
 
 (define parse-stmt
@@ -42,14 +42,17 @@
     (match tokens
       [`(,(? Identifier? ident) . ,ident-tokens)
        (match (car ident-tokens)
-         [(Symbol '::=)
-          (let [(eq-tokens (consume-symbol ident-tokens '::=))]
+         [(Symbol (or '::= '=))
+          (let* [(sym (car ident-tokens))
+                 (eq-tokens (consume-symbol ident-tokens (list (Symbol-sym sym))))]
             (match/values
-             (parse-expr eq-tokens)
-             [(rhs rhs-tokens)
-              (match rhs-tokens
-                [`(,(or (Newline) '()) . ,oth-toks) (values (Field ident rhs) oth-toks)])]))]
-         [_ (error "Unexpected Tokens, expected ::=")])]
+              (parse-expr eq-tokens)
+              [(rhs rhs-tokens)
+               (match rhs-tokens
+                 [`(,(or (Newline) '()) . ,oth-toks) (values (match sym
+                                                               [(Symbol '::=) (Field ident rhs)]
+                                                               [(Symbol '=) (TokenField ident rhs)]) oth-toks)])]))]
+         [_ (error "Unexpected Tokens, expected ::= or =")])]
       [_ (error "Unexpected Tokens, expected an Identifier")])))
 
 (define parse-top

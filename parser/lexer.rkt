@@ -4,7 +4,7 @@
 (require "utilities.rkt")
 
 (define ops
-  (list '::= '\|))
+  (list '::= '\| '=))
 
 (define char-ops (map (λ (sym-op) (string-ref (symbol->string sym-op) 0)) ops))
 
