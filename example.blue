@@ -1,3 +1,6 @@
-Zero     ::= "0"
-One      ::= "1"
+zero = "0"
+one  = "1"
+Zero     ::= zero
+One      ::= one
 BinDigit ::= Zero | One
+Flip     ::= One Zero | Zero One
