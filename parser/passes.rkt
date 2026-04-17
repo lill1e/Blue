@@ -7,10 +7,10 @@
     (match e
       [(? list?) (map ops->structs e)]
       [(or
-        (? Identifier?)
-        (? Symbol?)
-        (? Newline?)
-        (? String?)) e]
+         (? Identifier?)
+         (? Symbol?)
+         (? Newline?)
+         (? String?)) e]
       [(Binary (Symbol '\|) lhs rhs) (Or (if (list? lhs)
                                              (ops->structs lhs)
                                              (map ops->structs lhs))

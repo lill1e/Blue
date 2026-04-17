@@ -46,7 +46,7 @@
       ['|\n| (Newline)]
       [(? op?) (Symbol s)]
       [v #:when (symbol? v)
-         (match v [_ (Identifier v)])]
+       (match v [_ (Identifier v)])]
       [_ (error "invalid char found")])))
 
 (define word?
@@ -74,10 +74,10 @@
             (if (null? item)
                 null
                 (list
-                 (if
-                  (and (list? item)
-                       (eq? #\" (car item)))
-                  (list->string item) (acc->sym item)))))))
+                  (if
+                    (and (list? item)
+                         (eq? #\" (car item)))
+                    (list->string item) (acc->sym item)))))))
 
 (define file->symbols
   (λ (p acc alt-acc)

@@ -21,10 +21,10 @@
 (define parse-bin
   (λ (tokens)
     (match/values
-     (parse-vals tokens null)
-     [(lhs lhs-tokens) #;(values lhs lhs-tokens)
-                       (make-binary lhs-tokens lhs parse-vals '(\|))
-                       ])))
+      (parse-vals tokens null)
+      [(lhs lhs-tokens) #; (values lhs lhs-tokens)
+       (make-binary lhs-tokens lhs parse-vals '(\|))
+       ])))
 
 (define parse-expr
   (λ (tokens)
@@ -61,13 +61,13 @@
     (match tokens
       ['() (values stmts tokens)]
       [_ (match/values
-          (parse-top tokens)
-          [(stmt post-tokens) (parse-body-tk post-tokens (append stmts (list stmt)))])])))
+           (parse-top tokens)
+           [(stmt post-tokens) (parse-body-tk post-tokens (append stmts (list stmt)))])])))
 
 (define parse-body
   (λ (tokens)
     (match/values (parse-body-tk tokens null)
-                  [(body _) body])))
+      [(body _) body])))
 
 (define parse
   (λ (tokens)

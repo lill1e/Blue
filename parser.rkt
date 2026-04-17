@@ -12,7 +12,7 @@
         p
         (let* [(current-pass (car current-passes))
                (pass-res ((cdr current-pass) p))]
-            (passify pass-res (cdr current-passes))))))
+          (passify pass-res (cdr current-passes))))))
 
 (define file->blue
   (λ (file-name)
