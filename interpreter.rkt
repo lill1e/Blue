@@ -12,4 +12,4 @@
 ;;       - the lexer can be ripped from this project
 ;;       - similarly, the parser follows the Blue BNF using recursive descent
 
-(interpret "example.blue")
+(pretty-print (interpret "example.blue"))
