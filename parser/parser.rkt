@@ -14,6 +14,7 @@
     (match* (tokens acc)
       [((? end?) (? null?)) (error "expected a value, got nothing")]
       [(`(,(? end?) . ,_) _) (values acc tokens)]
+      ;; TODO: add parsing of as keyword
       [(`(,(or (? String? tok)
                (? Identifier? tok)) . ,toks) _)
        (parse-vals toks (append acc (list tok)))])))
@@ -40,6 +41,7 @@
 (define parse-stmt
   (λ (tokens)
     (match tokens
+      ;; TODO: add parsing rhs of token to be a string
       [`(,(? Identifier? ident) . ,ident-tokens)
        (match (car ident-tokens)
          [(Symbol (or '::= '=))

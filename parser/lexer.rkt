@@ -46,7 +46,9 @@
       ['|\n| (Newline)]
       [(? op?) (Symbol s)]
       [v #:when (symbol? v)
-       (match v [_ (Identifier v)])]
+       (match v
+         ['as (Keyword 'as)]
+         [_ (Identifier v)])]
       [_ (error "invalid char found")])))
 
 (define word?
