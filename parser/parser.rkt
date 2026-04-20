@@ -55,6 +55,7 @@
                                                                [(Symbol '::=) (Field ident rhs)]
                                                                [(Symbol '=) (TokenField ident rhs)]) oth-toks)])]))]
          [_ (error "Unexpected Tokens, expected ::= or =")])]
+      [`(,(? Newline?) . ,other-tokens) (parse-stmt other-tokens)]
       [_ (error "Unexpected Tokens, expected an Identifier")])))
 
 (define parse-top
