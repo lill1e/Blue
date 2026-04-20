@@ -38,17 +38,24 @@
       [`(,token . ,other-tokens) #:when (and (Symbol? token) (member (Symbol-sym token) kws)) other-tokens]
       [_ (error "consumed wrong type")])))
 
+(define consume-string
+  (λ (tokens)
+    (match tokens
+      [`(,(String s) . ,other-tokens) (values (String s) other-tokens)]
+      [_ (error "Unexpected Token, expected a String")])))
+
 (define parse-stmt
   (λ (tokens)
     (match tokens
-      ;; TODO: add parsing rhs of token to be a string
       [`(,(? Identifier? ident) . ,ident-tokens)
        (match (car ident-tokens)
          [(Symbol (or '::= '=))
           (let* [(sym (car ident-tokens))
                  (eq-tokens (consume-symbol ident-tokens (list (Symbol-sym sym))))]
             (match/values
-              (parse-expr eq-tokens)
+              (match sym
+                [(Symbol '::=) (parse-expr eq-tokens)]
+                [(Symbol '=) (consume-string eq-tokens)])
               [(rhs rhs-tokens)
                (match rhs-tokens
                  [`(,(or (Newline) '()) . ,oth-toks) (values (match sym
