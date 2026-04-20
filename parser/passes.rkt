@@ -10,7 +10,8 @@
          (? Identifier?)
          (? Symbol?)
          (? Newline?)
-         (? String?)) e]
+         (? String?)
+         (? As?)) e]
       [(Binary (Symbol '\|) lhs rhs) (Or (if (list? lhs)
                                              (ops->structs lhs)
                                              (map ops->structs lhs))
