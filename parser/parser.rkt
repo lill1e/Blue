@@ -9,6 +9,19 @@
                       Newline?
                       (λ (v) (match v [(Symbol '\|) #t] [_ #f]))))))
 
+(define consume-symbol
+  (λ (tokens kws)
+    (match tokens
+      [(? null?) (error "tried to consume an empty program")]
+      [`(,token . ,other-tokens) #:when (and (Symbol? token) (member (Symbol-sym token) kws)) other-tokens]
+      [_ (error "consumed wrong type")])))
+
+(define consume-string
+  (λ (tokens)
+    (match tokens
+      [`(,(? String? s) . ,other-tokens) (values s other-tokens)]
+      [_ (error "Unexpected Token, expected a String")])))
+
 (define parse-vals
   (λ (tokens acc)
     (match* (tokens acc)
@@ -30,19 +43,6 @@
 (define parse-expr
   (λ (tokens)
     (parse-bin tokens)))
-
-(define consume-symbol
-  (λ (tokens kws)
-    (match tokens
-      [(? null?) (error "tried to consume an empty program")]
-      [`(,token . ,other-tokens) #:when (and (Symbol? token) (member (Symbol-sym token) kws)) other-tokens]
-      [_ (error "consumed wrong type")])))
-
-(define consume-string
-  (λ (tokens)
-    (match tokens
-      [`(,(String s) . ,other-tokens) (values (String s) other-tokens)]
-      [_ (error "Unexpected Token, expected a String")])))
 
 (define parse-stmt
   (λ (tokens)
