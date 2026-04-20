@@ -22,12 +22,21 @@
       [`(,(? String? s) . ,other-tokens) (values s other-tokens)]
       [_ (error "Unexpected Token, expected a String")])))
 
+(define consume-identifier
+  (λ (tokens)
+    (match tokens
+      [`(,(? Identifier? ident) . ,other-tokens) (values ident other-tokens)]
+      [_ (error "Unexpected Token, expected a String")])))
+
 (define parse-vals
   (λ (tokens acc)
     (match* (tokens acc)
       [((? end?) (? null?)) (error "expected a value, got nothing")]
       [(`(,(? end?) . ,_) _) (values acc tokens)]
-      ;; TODO: add parsing of as keyword
+      [(`(,(? Identifier? as-lhs) ,(Keyword 'as) . ,toks) _)
+       (match/values (consume-identifier toks)
+         [((? Identifier? as-rhs) rhs-tokens) (parse-vals rhs-tokens (append acc (list (As as-lhs as-rhs))))]
+         [(_ _) (error "Unexpected Token, expected an Identifier")])]
       [(`(,(or (? String? tok)
                (? Identifier? tok)) . ,toks) _)
        (parse-vals toks (append acc (list tok)))])))
