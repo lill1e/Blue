@@ -1,15 +1,13 @@
 #lang racket
 
 (require "parser.rkt")
+(require "type-check.rkt")
 
-;; TODO: what is our interpreter going to do?
-;;       - maybe generate tentative parsers
-(define interpret
+(define run
   (λ (file-name)
-    (file->blue file-name)))
+    (let [(obj (file->blue file-name))]
+      (displayln "AST Representation:")
+      (pretty-print obj)
+      (displayln (if (type-check obj) "Well Formed BNF" "There is an issue in the provided BNF, please review the grammar (README.md)")))))
 
-;; TODO: make an example parser for the example BNF (Binary Numbers)
-;;       - the lexer can be ripped from this project
-;;       - similarly, the parser follows the Blue BNF using recursive descent
-
-(pretty-print (interpret "example.blue"))
+(run "example.blue")
