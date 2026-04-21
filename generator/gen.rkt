@@ -14,7 +14,7 @@
 
     (define rxs
       (for/list ([tok tokens])
-                  #`(cons '#,(Identifier-ident (TokenField-lhs tok)) #,(make-rx (String-s (car (TokenField-rhs tok)))))))
+                  #`(cons '#,(Identifier-ident (TokenField-lhs tok)) #,(make-rx (String-s (TokenField-rhs tok))))))
 
     #`(begin
         (define (find-match rxs input)
