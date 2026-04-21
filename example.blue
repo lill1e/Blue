@@ -4,3 +4,4 @@ Zero     ::= zero
 One      ::= one
 BinDigit ::= Zero | One
 Flip     ::= One Zero | Zero One
+BinNum   ::= BinDigit BinNum | BinDigit
