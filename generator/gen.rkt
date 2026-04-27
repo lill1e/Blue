@@ -7,6 +7,7 @@
   (require racket/match)
   (require racket/syntax)
   (require racket/set)
+  (require racket/list)
 
   (define (gen-tokenizer tokens inp)
     (define (make-rx rx)
@@ -39,8 +40,12 @@
     (match kind
       ['() #`(values #,consumed null)]
       ; Tokens
-      [(cons (Identifier item) rst)
+      [(cons (or (Identifier item) (As (Identifier item) (Identifier _))) rst)
        #:when (set-member? defined-tokens (Identifier item))
+        (define value (car kind))
+        (define ret (match value
+          [(Identifier _) #`rst-parsed]
+          [(As (Identifier _) (Identifier field)) #`(dict-set rst-parsed '#,field #`token)]))
         #`(begin
             (if (null? #,tokenized)
               (values #,consumed #f)
@@ -48,18 +53,22 @@
                             [(token-name) (car token)]
                             [(rst-consumed rst-parsed) #,(gen-parser/loop defined-tokens prefix rst #`(cdr #,tokenized) (+ 1 consumed))])
               (if (and (equal? '#,item token-name) rst-parsed)
-                  (values rst-consumed (cons token rst-parsed))
+                  (values rst-consumed #,ret)
                   (values #,consumed #f)))
             ))]
       ; Other nodes
-      [(cons (Identifier item) rst)
+      [(cons (or (Identifier item) (As (Identifier item) (Identifier _))) rst)
+        (define value (car kind))
+        (define ret (match value
+          [(Identifier _) #`rst-parsed]
+          [(As (Identifier _) (Identifier field)) #`(dict-set rst-parsed '#,field node-parsed)]))
        (define name (format-id prefix "~a-~a" (syntax->datum prefix) item))
        (define parser (format-id prefix "~a-parse/tokens" name))
         #`(begin
           (let*-values ([(node-consumed node-parsed) (#,parser #,tokenized)]
                         [(rst-consumed rst-parsed) #,(gen-parser/loop defined-tokens prefix rst #`(list-tail #,tokenized node-consumed) consumed)])
           (if (and node-parsed rst-parsed)
-              (values (+ node-consumed rst-consumed) (cons node-parsed rst-parsed))
+              (values (+ node-consumed rst-consumed) #,ret)
               (values #,consumed #f))))]
       ; Or
       [(Or lhs rhs) 
@@ -70,7 +79,11 @@
                 (values lhs-consumed lhs-parsed)
                 (values rhs-consumed rhs-parsed))))]))
 
+  (define (build-struct-from-dict dict fields name)
+    #`(#,name #,@(for/list ([field fields]) #`(dict-ref #,dict '#,field null))))
+
   (define (gen-parser/tokens defined-tokens prefix name kind tokens)
+    (define fields (gen-struct/fields kind))
     #`(begin
         (if (null? #,tokens)
           (values 0 #f)
@@ -78,25 +91,28 @@
               [(list (Identifier _) ...)
                 #`(let-values ([(consumed parsed) #,(gen-parser/loop defined-tokens prefix kind tokens 0)])
                     (if parsed
-                      (values consumed (apply #,name parsed))
+                      (values consumed #,(build-struct-from-dict #'parsed fields name))
                       (values 0 #f)))
               ]
               [(Or lhs rhs)
                 #`(let-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokens 0)]
                                [(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokens 0)])
                     (if lhs-parsed
-                      (values lhs-consumed (#,name 'left lhs-parsed))
+                      (values lhs-consumed #,(build-struct-from-dict #'(dict-set lhs-parsed 'variant 'left) fields name))
                       (if rhs-parsed
-                        (values rhs-consumed (#,name 'right rhs-parsed))
+                        (values rhs-consumed #,(build-struct-from-dict #'(dict-set rhs-parsed 'variant 'right) fields name))
                         (values 0 #f))))]))))
 
   (define (gen-struct/fields kind)
-    (match kind
+    (remove-duplicates (match kind
       ['() null]
       [(cons (Identifier field) rst)
-        (cons field (gen-struct/fields rst))]
+        (gen-struct/fields rst)]
+      [(cons (As value (Identifier field)) rst)
+        (append `(,field) (gen-struct/fields rst))]
       [(Or lhs rhs)
-        '(variant data)]))
+        (append '(variant) (gen-struct/fields lhs) (gen-struct/fields rhs))]
+      [(As inner (Identifier field)) (cons field (gen-struct/fields inner))])))
 
   (define (gen-struct field prefix tokenizer defined-tokens)
     (match field
