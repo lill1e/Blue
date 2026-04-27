@@ -1,0 +1,9 @@
+NUMBER = "[0-9]+"
+STRING = "\".+\""
+LET    = "let"
+IDENT  = "[a-zA-Z]+"
+EQ     = "="
+SEMI   = ";"
+
+prim  ::= NUMBER as val | STRING as val
+binding ::= LET IDENT as name EQ prim as val SEMI
