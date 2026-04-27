@@ -1,0 +1,14 @@
+NUMBER = "[0-9]+"
+ADD    = "\+"
+SUB    = "\-"
+MUL    = "\*"
+DIV    = "\/"
+
+
+add_op ::= ADD as op | SUB as op
+mul_op ::= MUL as op | DIV as op
+
+add ::= mul as lhs  add_op as op  add as rhs  |  mul as lhs
+mul ::= NUMBER as lhs  mul_op as op  mul as rhs  | NUMBER as lhs
+
+expr ::= add as body

@@ -45,7 +45,7 @@
         (define value (car kind))
         (define ret (match value
           [(Identifier _) #`rst-parsed]
-          [(As (Identifier _) (Identifier field)) #`(dict-set rst-parsed '#,field #`token)]))
+          [(As (Identifier _) (Identifier field)) #`(dict-set rst-parsed '#,field (cadr token))]))
         #`(begin
             (if (null? #,tokenized)
               (values #,consumed #f)
@@ -58,26 +58,30 @@
             ))]
       ; Other nodes
       [(cons (or (Identifier item) (As (Identifier item) (Identifier _))) rst)
+       (define node-consumed (datum->syntax #f (gensym 'node-consumed)))
+       (define node-parsed (datum->syntax #f (gensym 'node-parsed)))
+       (define rst-consumed (datum->syntax #f (gensym 'rst-consumed)))
+       (define rst-parsed (datum->syntax #f (gensym 'rst-parsed)))
         (define value (car kind))
         (define ret (match value
-          [(Identifier _) #`rst-parsed]
-          [(As (Identifier _) (Identifier field)) #`(dict-set rst-parsed '#,field node-parsed)]))
+          [(Identifier _) rst-parsed]
+          [(As (Identifier _) (Identifier field)) #`(dict-set #,rst-parsed '#,field #,node-parsed)]))
        (define name (format-id prefix "~a-~a" (syntax->datum prefix) item))
        (define parser (format-id prefix "~a-parse/tokens" name))
         #`(begin
-          (let*-values ([(node-consumed node-parsed) (#,parser #,tokenized)]
-                        [(rst-consumed rst-parsed) #,(gen-parser/loop defined-tokens prefix rst #`(list-tail #,tokenized node-consumed) consumed)])
-          (if (and node-parsed rst-parsed)
-              (values (+ node-consumed rst-consumed) #,ret)
+          (let*-values ([(#,node-consumed #,node-parsed) (#,parser #,tokenized)]
+                        [(#,rst-consumed #,rst-parsed) (if #,node-parsed #,(gen-parser/loop defined-tokens prefix rst #`(list-tail #,tokenized #,node-consumed) consumed) (values #f #f))])
+          (if (and #,node-parsed #,rst-parsed)
+              (values (+ #,node-consumed #,rst-consumed) #,ret)
               (values #,consumed #f))))]
       ; Or
       [(Or lhs rhs) 
         #`(begin
-            (let*-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokenized 0)]
-                          [(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokenized 0)])
+            (let*-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokenized 0)])
               (if lhs-parsed
                 (values lhs-consumed lhs-parsed)
-                (values rhs-consumed rhs-parsed))))]))
+                (let-values ([(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokenized 0)])
+                  (values rhs-consumed rhs-parsed)))))]))
 
   (define (build-struct-from-dict dict fields name)
     #`(#,name #,@(for/list ([field fields]) #`(dict-ref #,dict '#,field null))))
@@ -88,20 +92,20 @@
         (if (null? #,tokens)
           (values 0 #f)
           #,(match kind
-              [(list (Identifier _) ...)
+              [(list (or (As _ _) (Identifier _)) ...)
                 #`(let-values ([(consumed parsed) #,(gen-parser/loop defined-tokens prefix kind tokens 0)])
                     (if parsed
                       (values consumed #,(build-struct-from-dict #'parsed fields name))
                       (values 0 #f)))
               ]
               [(Or lhs rhs)
-                #`(let-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokens 0)]
-                               [(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokens 0)])
+                #`(let-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokens 0)])
                     (if lhs-parsed
                       (values lhs-consumed #,(build-struct-from-dict #'(dict-set lhs-parsed 'variant 'left) fields name))
-                      (if rhs-parsed
-                        (values rhs-consumed #,(build-struct-from-dict #'(dict-set rhs-parsed 'variant 'right) fields name))
-                        (values 0 #f))))]))))
+                      (let-values ([(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokens 0)])
+                        (if rhs-parsed
+                          (values rhs-consumed #,(build-struct-from-dict #'(dict-set rhs-parsed 'variant 'right) fields name))
+                          (values 0 #f)))))]))))
 
   (define (gen-struct/fields kind)
     (remove-duplicates (match kind
