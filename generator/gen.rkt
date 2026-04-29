@@ -36,6 +36,12 @@
         
         (tokenize/work (list #,@rxs) #,inp)))
 
+  (define (flatten-ors kind)
+    (match kind
+      [(Or lhs rhs)
+        (append (flatten-ors lhs) (flatten-ors rhs))]
+      [_ (list kind)]))
+
   (define (gen-parser/loop defined-tokens prefix kind tokenized consumed)
     (match kind
       ['() #`(values #,consumed null)]
@@ -75,13 +81,16 @@
               (values (+ #,node-consumed #,rst-consumed) #,ret)
               (values #,consumed #f))))]
       ; Or
-      [(Or lhs rhs) 
-        #`(begin
-            (let*-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokenized 0)])
-              (if lhs-parsed
-                (values lhs-consumed lhs-parsed)
-                (let-values ([(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokenized 0)])
-                  (values rhs-consumed rhs-parsed)))))]))
+      [(Or _ _)
+        (define flattened (flatten-ors kind))
+        (for/foldr ([ret #`(values 0 #f)])
+                   ([fl flattened])
+          (define consumed (datum->syntax #f (gensym 'consumed)))
+          (define parsed (datum->syntax #f (gensym 'parsed)))
+          #`(let*-values ([(#,consumed #,parsed) #,(gen-parser/loop defined-tokens prefix fl tokenized 0)])
+              (if #,parsed
+                (values #,consumed #,parsed)
+                #,ret)))]))
 
   (define (build-struct-from-dict dict fields name)
     #`(#,name #,@(for/list ([field fields]) #`(dict-ref #,dict '#,field null))))
@@ -98,14 +107,17 @@
                       (values consumed #,(build-struct-from-dict #'parsed fields name))
                       (values 0 #f)))
               ]
-              [(Or lhs rhs)
-                #`(let-values ([(lhs-consumed lhs-parsed) #,(gen-parser/loop defined-tokens prefix lhs tokens 0)])
-                    (if lhs-parsed
-                      (values lhs-consumed #,(build-struct-from-dict #'(dict-set lhs-parsed 'variant 'left) fields name))
-                      (let-values ([(rhs-consumed rhs-parsed) #,(gen-parser/loop defined-tokens prefix rhs tokens 0)])
-                        (if rhs-parsed
-                          (values rhs-consumed #,(build-struct-from-dict #'(dict-set rhs-parsed 'variant 'right) fields name))
-                          (values 0 #f)))))]))))
+              [(Or _ _)
+                (define flattened (flatten-ors kind))
+                (for/foldr ([ret #`(values 0 #f)])
+                          ([fl flattened]
+                           [i (in-naturals)])
+                  (define consumed (datum->syntax #f (gensym 'consumed)))
+                  (define parsed (datum->syntax #f (gensym 'parsed)))
+                  #`(let*-values ([(#,consumed #,parsed) #,(gen-parser/loop defined-tokens prefix fl tokens 0)])
+                      (if #,parsed
+                        (values #,consumed #,(build-struct-from-dict #`(dict-set #,parsed 'variant #,i) fields name))
+                        #,ret)))]))))
 
   (define (gen-struct/fields kind)
     (remove-duplicates (match kind

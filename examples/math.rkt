@@ -1,15 +1,12 @@
 #lang racket
-(require "../generator/gen.rkt")
+(require "../blue.rkt")
 (generate math "./math.blue")
-(require racket/pretty)
-
-;(pretty-print (math-expr-parse "1 * (2 + 5) + 3 * 4"))
 
 (define (exec node)
  (match node
-   [(? math-prim?) #:when (equal? (math-prim-variant node) 'left)
+   [(? math-prim?) #:when (equal? (math-prim-variant node) 0)
     (string->number (math-prim-val node))]
-   [(? math-prim?) #:when (equal? (math-prim-variant node) 'right)
+   [(? math-prim?) #:when (equal? (math-prim-variant node) 1)
     (exec (math-prim-val node))]
    [(? math-expr?) (exec (math-expr-body node))]
    [(? math-group?) (exec (math-group-body node))]

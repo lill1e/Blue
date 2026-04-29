@@ -1,0 +1,4 @@
+zero = "0"
+one  = "1"
+two  = "2"
+trinary ::= zero as v | one as v | two as v
