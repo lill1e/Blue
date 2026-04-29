@@ -13,11 +13,11 @@
          (? String?)
          (? As?)) e]
       [(Binary (Symbol '\|) lhs rhs) (Or (if (list? lhs)
-                                             (ops->structs lhs)
-                                             (map ops->structs lhs))
+                                             (map ops->structs lhs)
+                                             (ops->structs lhs))
                                          (if (list? rhs)
-                                             (ops->structs rhs)
-                                             (map ops->structs rhs)))]
+                                             (map ops->structs rhs)
+                                             (ops->structs rhs)))]
       [(Field lhs rhs) (Field lhs (ops->structs rhs))]
       [(TokenField lhs rhs) (TokenField lhs (ops->structs rhs))])))
 
