@@ -1,0 +1,5 @@
+number = "[0-9]+"
+LParen = "\("
+RParen = "\)"
+comma = "( )?,( )?"
+pair ::= LParen pair as fst comma pair as snd RParen | number as n
