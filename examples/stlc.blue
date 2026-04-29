@@ -1,0 +1,8 @@
+number = "[0-9]+"
+LParen = "\("
+RParen = "\)"
+functionkw = "λ"
+word = "[a-zA-Z]+"
+func ::= LParen functionkw word as binding program as value RParen
+app  ::= LParen program as rator program as rand RParen
+program ::= number as expr | func as expr | app as expr | word as expr
