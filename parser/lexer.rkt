@@ -20,7 +20,7 @@
 
 (define word-string?
   (λ (loc)
-    (and (> (length loc) 1)
+    (and (>= (length loc) 1)
          (eqv? (car loc) #\"))))
 
 (define chars?
@@ -86,13 +86,17 @@
     (let [(r (read-char p))]
       (match* (r alt-acc)
         [(_ _) #:when (eof-object? r) (if (eq? (last acc) '|\n|) (extend-acc acc alt-acc) (extend-acc (extend-acc acc alt-acc) '|\n|))]
-        [(#\space _) (file->symbols p (extend-acc acc alt-acc) null)]
+        [(#\space _) #:when (not (word-string? alt-acc)) (file->symbols p (extend-acc acc alt-acc) null)]
         [(#\newline _) (file->symbols p (extend-acc (extend-acc acc alt-acc) '|\n|) null)]
-        [(#\" (? word-string?)) (file->symbols p (extend-acc acc (append alt-acc (list r))) null)]
-        [(#\" _) (file->symbols p (extend-acc acc alt-acc) (list r))]
+        [(#\" (? word-string?)) #:when (or (empty? alt-acc) (not (equal? (last alt-acc) #\\)))
+          (file->symbols p (extend-acc acc (append alt-acc (list r))) null)]
+        [(#\" _) #:when (or (empty? alt-acc) (not (equal? (last alt-acc) #\\)))
+          (file->symbols p (extend-acc acc alt-acc) (list r))]
+        [((? char?) (? word-string?))
+        
+          (file->symbols p acc (append alt-acc (list r)))]
         [((? word-char?) (? word?)) (file->symbols p acc (append alt-acc (list r)))]
         [((? word-char?) _) (file->symbols p (extend-acc acc alt-acc) (list r))]
-        [((? char?) (? word-string?)) (file->symbols p acc (append alt-acc r))]
         [((? char?) _) #:when (chars-op? (append (list-if-needed alt-acc) (list r))) (file->symbols p acc (append alt-acc (list r)))]
         [((? char?) (? op?)) (file->symbols p acc (append alt-acc (list r)))]
         [((? char?) (? op-chars?)) (file->symbols p acc (append alt-acc (list r)))]

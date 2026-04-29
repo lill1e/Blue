@@ -1,0 +1,4 @@
+ZERO = "0"
+ONE  = "1"
+
+BinDigit ::= ZERO as val | ONE as val

@@ -1,0 +1,19 @@
+NUMBER = "[0-9]+"
+ADD    = "\+"
+SUB    = "\-"
+MUL    = "\*"
+DIV    = "\/"
+LPAREN = "\("
+RPAREN = "\)"
+
+
+
+add_op ::= ADD as kind | SUB as kind
+mul_op ::= MUL as kind | DIV as kind
+
+group ::= LPAREN expr as body RPAREN
+prim  ::= NUMBER as val | group as val
+add   ::= mul as lhs  add_op as op  add as rhs  |  mul as lhs
+mul   ::= prim as lhs  mul_op as op  mul as rhs  | prim as lhs
+
+expr ::= add as body
